@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Edles Holz-Schach Deluxe - WhatsApp & Netlify Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebaseModules = { initializeApp, getAuth, signInAnonymously, getFirestore, doc, setDoc, onSnapshot };
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { dark: '#0f0e0d', card: '#1a1714', woodDark: '#5c3a21', woodLight: '#d2b48c', accent: '#d97706' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f0e0d !important;
+            color: #f3f4f6 !important;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .board-container {
+            width: 100%;
+            max-width: min(98vw, 85vh);
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 100%;
+            height: 100%;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.9), inset 0 2px 5px rgba(255,255,255,0.1);
+            border: 4px solid #2d1a0e;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .square {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .square.light {
+            background: linear-gradient(135deg, #e6c594 0%, #d2b48c 100%) !important;
+        }
+        .square.dark {
+            background: linear-gradient(135deg, #7c4a2a 0%, #5c3a21 100%) !important;
+        }
+        .square.selected {
+            background: rgba(217, 119, 6, 0.85) !important;
+        }
+        .square.highlighted::after {
+            content: '';
+            position: absolute;
+            width: 26%;
+            height: 26%;
+            background-color: rgba(217, 119, 6, 0.95);
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(217,119,6,0.9);
+        }
+        .piece {
+            font-size: min(11.5vw, 62px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: grab;
+        }
+        .piece:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(6px);
+        }
+        .wood-border {
+            background: linear-gradient(135deg, #2d1a0e 0%, #1a0f08 100%) !important;
+        }
+    </style>
+</head>
+<body class="overflow-hidden bg-[#0f0e0d] text-white">
+
+    <header class="w-full wood-border border-b border-amber-900/40 px-3 py-2 flex items-center justify-between shadow-xl shrink-0">
+        <div class="flex items-center space-x-2">
+            <div class="bg-amber-700 text-amber-100 p-1.5 rounded-lg shadow-inner border border-amber-600">
+                <i class="fa-solid fa-chess text-xs"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-xs tracking-wide text-amber-100">Edles Holz-Schach</h1>
+                <p id="room-status-badge" class="text-[9px] text-amber-400/80">Netlify & WhatsApp Edition</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-1.5">
+            <button onclick="openRulesModal()" class="bg-amber-950/80 hover:bg-amber-900 text-amber-200 px-2 py-1 rounded-lg text-xs font-medium transition active:scale-95 border border-amber-800/50 flex items-center gap-1">
+                <i class="fa-solid fa-circle-question"></i> Netlify Hilfe
+            </button>
+            <button onclick="returnToMenu()" class="bg-amber-950/80 hover:bg-amber-900 text-amber-200 px-2 py-1 rounded-lg text-xs font-medium transition active:scale-95 border border-amber-800/50 flex items-center gap-1">
+                <i class="fa-solid fa-house"></i> Menü
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col items-center justify-between p-1 max-w-lg mx-auto w-full my-auto overflow-hidden">
+
+        <!-- Menü Bildschirm -->
+        <div id="menu-screen" class="w-full bg-[#1a1714] p-5 rounded-3xl border border-amber-900/30 shadow-2xl space-y-4 my-auto">
+            <div class="text-center space-y-1">
+                <h2 class="text-xl font-bold tracking-tight text-amber-100 font-serif">Holzschach Deluxe</h2>
+                <p class="text-xs text-zinc-400">Volle Bildschirmgröße für Samsung Galaxy A55.</p>
+            </div>
+
+            <div class="space-y-2.5 pt-1">
+                <button onclick="showOnlineModal()" class="w-full bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-600 hover:to-amber-700 text-amber-100 font-semibold py-3 px-3.5 rounded-2xl shadow-lg transition active:scale-95 flex items-center justify-between group border border-amber-600/30">
+                    <div class="flex items-center gap-2.5">
+                        <div class="bg-amber-950/60 p-2 rounded-xl border border-amber-700/40 text-amber-300">
+                            <i class="fa-brands fa-whatsapp text-base"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-xs font-bold">Online per WhatsApp</div>
+                            <div class="text-[10px] text-amber-200/70">Ohne Passwort & sofort spielbar</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs opacity-80 group-hover:translate-x-1 transition-transform text-amber-300"></i>
+                </button>
+
+                <button onclick="showAiDifficultyModal()" class="w-full bg-[#24201c] hover:bg-[#2e2925] text-white font-semibold py-3 px-3.5 rounded-2xl border border-amber-900/40 transition active:scale-95 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <div class="bg-amber-900/30 p-2 rounded-xl text-amber-400 border border-amber-800/30">
+                            <i class="fa-solid fa-robot text-base"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-xs font-bold">Gegen KI spielen</div>
+                            <div class="text-[10px] text-zinc-400">Einstellbare Schwierigkeit</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs opacity-80 group-hover:translate-x-1 transition-transform text-amber-400"></i>
+                </button>
+
+                <button onclick="startLocalGame()" class="w-full bg-[#24201c] hover:bg-[#2e2925] text-white font-semibold py-3 px-3.5 rounded-2xl border border-amber-900/40 transition active:scale-95 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <div class="bg-amber-900/30 p-2 rounded-xl text-amber-400 border border-amber-800/30">
+                            <i class="fa-solid fa-user-group text-base"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-xs font-bold">Lokal zu zweit</div>
+                            <div class="text-[10px] text-zinc-400">Am selben Smartphone spielen</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs opacity-80 group-hover:translate-x-1 transition-transform text-amber-400"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Spiel Bildschirm -->
+        <div id="game-screen" class="w-full flex-col space-y-1.5 hidden items-center justify-center my-auto">
+            <div class="w-full flex items-center justify-between bg-[#1a1714] px-3.5 py-1.5 rounded-xl border border-amber-900/30 shadow-md">
+                <div class="flex items-center gap-2">
+                    <div id="turn-indicator" class="w-2.5 h-2.5 rounded-full bg-amber-200 shadow-sm"></div>
+                    <span id="turn-text" class="text-xs font-semibold text-amber-100">Weiß ist am Zug</span>
+                </div>
+                <div id="game-info-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-950/80 text-amber-300 border border-amber-800/40">Lokales Spiel</div>
+            </div>
+
+            <!-- Maximiertes Holz-Schachbrett -->
+            <div class="board-container bg-[#1a1714] p-1 rounded-2xl border border-amber-900/40 shadow-2xl">
+                <div id="board" class="board-grid rounded-lg overflow-hidden shadow-inner"></div>
+            </div>
+
+            <div class="w-full flex items-center justify-between bg-[#1a1714] px-3.5 py-1.5 rounded-xl border border-amber-900/30 text-xs shadow-md">
+                <div class="flex flex-col">
+                    <span class="text-zinc-400 text-[9px]">Status:</span>
+                    <span id="captured-pieces" class="font-bold text-amber-200 tracking-wider text-xs">Bereit</span>
+                </div>
+                <div class="flex gap-1.5">
+                    <button onclick="flipBoard()" class="bg-amber-950/80 hover:bg-amber-900 text-amber-200 px-2.5 py-1.5 rounded-xl text-xs font-medium transition active:scale-95 border border-amber-800/40 flex items-center gap-1">
+                        <i class="fa-solid fa-rotate"></i> Drehen
+                    </button>
+                    <button onclick="returnToMenu()" class="bg-red-500/15 hover:bg-red-500/25 text-red-400 px-2.5 py-1.5 rounded-xl text-xs font-medium transition active:scale-95 border border-red-500/30">
+                        Beenden
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="online-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm space-y-3.5 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-base font-bold text-amber-100 font-serif">WhatsApp Duell</h3>
+                <button onclick="closeModals()" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <p class="text-[11px] text-zinc-400 leading-relaxed">Erstelle deinen persönlichen Einladungslink für WhatsApp – ganz ohne Passwort!</p>
+            
+            <div class="space-y-2.5 pt-1">
+                <button onclick="createWhatsAppRoom()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-2xl text-xs transition shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp Link erstellen
+                </button>
+                
+                <div class="relative flex py-0.5 items-center">
+                    <div class="flex-grow border-t border-amber-900/30"></div>
+                    <span class="flex-shrink mx-3 text-zinc-500 text-[10px] uppercase">oder beitreten</span>
+                    <div class="flex-grow border-t border-amber-900/30"></div>
+                </div>
+
+                <div class="flex gap-2">
+                    <input type="text" id="room-code-input" placeholder="Link hier einfügen..." class="flex-1 bg-zinc-900 border border-amber-900/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+                    <button onclick="joinWhatsAppRoom()" class="bg-amber-900 hover:bg-amber-800 text-amber-100 font-semibold px-3.5 py-2 rounded-xl text-xs transition active:scale-95 border border-amber-700/40">Spielen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="ai-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm space-y-3.5 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-base font-bold text-amber-100 font-serif">Schwierigkeit wählen</h3>
+                <button onclick="closeModals()" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <p class="text-[11px] text-zinc-400">Wähle, wie clever der Computergegner spielen soll.</p>
+            
+            <div class="space-y-2 pt-1">
+                <button onclick="startAiGame('easy')" class="w-full bg-[#24201c] hover:bg-[#2e2925] text-left p-3 rounded-2xl border border-amber-900/40 transition active:scale-95 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-amber-100">Leicht (Anfänger)</div>
+                        <div class="text-[10px] text-zinc-400">Zufällige Züge zum Entspannen</div>
+                    </div>
+                    <i class="fa-solid fa-face-smile text-amber-400 text-base"></i>
+                </button>
+                <button onclick="startAiGame('medium')" class="w-full bg-[#24201c] hover:bg-[#2e2925] text-left p-3 rounded-2xl border border-amber-900/40 transition active:scale-95 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-amber-100">Mittel (Fortgeschritten)</div>
+                        <div class="text-[10px] text-zinc-400">Achtet auf Material & Schläge</div>
+                    </div>
+                    <i class="fa-solid fa-face-grimace text-amber-400 text-base"></i>
+                </button>
+                <button onclick="startAiGame('hard')" class="w-full bg-[#24201c] hover:bg-[#2e2925] text-left p-3 rounded-2xl border border-amber-900/40 transition active:scale-95 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-amber-100">Schwer (Profi)</div>
+                        <div class="text-[10px] text-zinc-400">Tiefere Vorausschau</div>
+                    </div>
+                    <i class="fa-solid fa-brain text-amber-400 text-base"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="room-link-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm space-y-3.5 shadow-2xl text-center">
+            <div class="w-11 h-11 bg-emerald-950 text-emerald-400 border border-emerald-800/50 rounded-2xl flex items-center justify-center mx-auto text-lg shadow-inner">
+                <i class="fa-brands fa-whatsapp"></i>
+            </div>
+            <div class="space-y-1">
+                <h3 class="text-base font-bold text-amber-100 font-serif">Dein WhatsApp-Link</h3>
+                <p class="text-[11px] text-zinc-400">Teile diesen Link per WhatsApp. Der Mitspieler klickt drauf und ist sofort ohne Passwort im Spiel!</p>
+            </div>
+            <div class="bg-zinc-900 p-2.5 rounded-xl border border-amber-900/50 flex items-center justify-between">
+                <span id="display-room-code" class="text-[10px] font-mono text-amber-400 font-bold truncate max-w-[180px]">---</span>
+                <button onclick="copyRoomLink()" class="bg-amber-700 hover:bg-amber-600 text-amber-100 text-[11px] px-2.5 py-1.5 rounded-lg transition shrink-0">Kopieren</button>
+            </div>
+            <p id="copy-feedback" class="text-[10px] text-green-400 h-3"></p>
+            
+            <div class="space-y-2 pt-1">
+                <button onclick="shareViaWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-2xl text-xs transition shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> Direkt per WhatsApp senden
+                </button>
+                <button onclick="closeRoomLinkModal()" class="w-full bg-amber-950/80 hover:bg-amber-900 text-amber-200 font-semibold py-2.5 rounded-2xl text-xs transition active:scale-95 border border-amber-800/40">
+                    Spiel starten (Weiß)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="message-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm text-center space-y-3.5 shadow-2xl">
+            <div class="w-12 h-12 bg-amber-950 text-amber-400 border border-amber-800/50 rounded-2xl flex items-center justify-center mx-auto text-xl shadow-inner">
+                <i id="modal-icon" class="fa-solid fa-trophy"></i>
+            </div>
+            <div class="space-y-1">
+                <h3 id="modal-title" class="text-base font-bold text-amber-100 font-serif">Spiel beendet</h3>
+                <p id="modal-desc" class="text-xs text-zinc-400">Matt! Das Spiel ist vorbei.</p>
+            </div>
+            <button onclick="closeMessageModal(); returnToMenu();" class="w-full bg-amber-700 hover:bg-amber-600 text-amber-100 font-semibold py-2.5 rounded-2xl text-xs transition shadow-lg active:scale-95 border border-amber-600/40">
+                Zurück zum Menü
+            </button>
+        </div>
+    </div>
+
+    <div id="rules-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm space-y-3.5 shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center">
+                <h3 class="text-base font-bold text-amber-100 font-serif">Netlify Drop (Ohne Passwort!)</h3>
+                <button onclick="closeRulesModal()" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="text-[11px] text-zinc-300 space-y-2.5 leading-relaxed">
+                <p><strong>1. Einfach & Kostenlos:</strong> Gehe auf <code class="text-amber-400">drop.netlify.com</code>. Du brauchst dort <strong>kein</strong> Konto und kein Passwort!</p>
+                <p><strong>2. Datei hineinziehen:</strong> Ziehe deine gespeicherte <code class="text-amber-400">index.html</code> mit der Maus in das Browserfenster von Netlify.</p>
+                <p><strong>3. Fertig:</strong> Du erhältst sofort einen echten Link für dein Handy und deine WhatsApp-Mitspieler.</p>
+            </div>
+            <button onclick="closeRulesModal()" class="w-full bg-amber-700 text-amber-100 font-semibold py-2.5 rounded-2xl text-xs transition border border-amber-600/40">Verstanden</button>
+        </div>
+    </div>
+
+    <script>
+        const pieceUnicode = {
+            'p': '♟', 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚',
+            'P': '♙', 'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔'
+        };
+
+        let game = new Chess();
+        let selectedSquare = null;
+        let possibleMoves = [];
+        let gameMode = 'menu';
+        let aiDifficulty = 'medium';
+        let playerColor = 'w';
+        let boardFlipped = false;
+        let shareableLink = '';
+        let currentRoomId = null;
+        let db = null;
+        let auth = null;
+        let unsubscribeRoom = null;
+        let isRemoteUpdate = false;
+
+        window.addEventListener('load', async () => {
+            if (window.firebaseModules) {
+                try {
+                    const { initializeApp, getAuth, signInAnonymously, getFirestore } = window.firebaseModules;
+                    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+                        apiKey: "AIzaSyDummyKeyForLocalHostingMode",
+                        authDomain: "schach-deluxe.firebaseapp.com",
+                        projectId: "schach-deluxe"
+                    };
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    await signInAnonymously(auth);
+                } catch(e) {
+                    console.warn("Offline/Local Modus aktiv", e);
+                }
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const roomParam = params.get('room');
+            const colorParam = params.get('color');
+
+            if (roomParam) {
+                currentRoomId = roomParam;
+                playerColor = colorParam || 'b';
+                boardFlipped = (playerColor === 'b');
+                gameMode = 'online';
+                document.getElementById('game-info-badge').innerText = `Online (Du bist ${playerColor === 'w' ? 'Weiß' : 'Schwarz'})`;
+                switchScreen('game');
+                renderBoard();
+                updateStatus();
+                listenToRoom(roomParam);
+            }
+        });
+
+        window.startLocalGame = function() {
+            if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+            gameMode = 'local';
+            game = new Chess();
+            selectedSquare = null;
+            possibleMoves = [];
+            boardFlipped = false;
+            document.getElementById('game-info-badge').innerText = 'Lokales Holz-Spiel';
+            switchScreen('game');
+            renderBoard();
+            updateStatus();
+        }
+
+        window.showAiDifficultyModal = function() {
+            document.getElementById('ai-modal').classList.remove('hidden');
+        }
+
+        window.startAiGame = function(difficulty) {
+            if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+            aiDifficulty = difficulty;
+            gameMode = 'ai';
+            game = new Chess();
+            selectedSquare = null;
+            possibleMoves = [];
+            boardFlipped = false;
+            document.getElementById('game-info-badge').innerText = `Holz-KI (${difficulty.toUpperCase()})`;
+            closeModals();
+            switchScreen('game');
+            renderBoard();
+            updateStatus();
+        }
+
+        window.showOnlineModal = function() {
+            document.getElementById('online-modal').classList.remove('hidden');
+        }
+
+        window.closeModals = function() {
+            document.getElementById('online-modal').classList.add('hidden');
+            document.getElementById('ai-modal').classList.add('hidden');
+            document.getElementById('room-link-modal').classList.add('hidden');
+            document.getElementById('rules-modal').classList.add('hidden');
+        }
+
+        window.openRulesModal = function() {
+            document.getElementById('rules-modal').classList.remove('hidden');
+        }
+
+        window.closeRulesModal = function() {
+            document.getElementById('rules-modal').classList.add('hidden');
+        }
+
+        window.closeMessageModal = function() {
+            document.getElementById('message-modal').classList.add('hidden');
+        }
+
+        window.returnToMenu = function() {
+            if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+            gameMode = 'menu';
+            currentRoomId = null;
+            switchScreen('menu');
+            document.getElementById('room-status-badge').innerText = 'Netlify & WhatsApp Edition';
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        function switchScreen(screen) {
+            if (screen === 'menu') {
+                document.getElementById('menu-screen').classList.remove('hidden');
+                document.getElementById('game-screen').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('flex');
+            } else {
+                document.getElementById('menu-screen').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('hidden');
+                document.getElementById('game-screen').classList.add('flex');
+            }
+        }
+
+        window.createWhatsAppRoom = async function() {
+            closeModals();
+            playerColor = 'w';
+            boardFlipped = false;
+            game = new Chess();
+
+            const roomKey = 'room_' + Math.random().toString(36).substring(2, 8);
+            currentRoomId = roomKey;
+            
+            let baseUrl = window.location.href.split('?')[0];
+            
+            // HIER TRÄGST DU DEINE GITHUB-PAGES ADRESSE EIN (z.B. 'https://deinbenutzername.github.io/schach/')
+            const githubPagesUrl = 'https://YOUR_GITHUB_PAGES_URL.github.io/YOUR_REPOSITORY_NAME/';
+            
+            if (baseUrl.startsWith('file://') || baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
+                baseUrl = githubPagesUrl;
+            }
+            
+            shareableLink = `${baseUrl}?room=${roomKey}&color=b`;
+
+            document.getElementById('display-room-code').innerText = shareableLink;
+            document.getElementById('room-link-modal').classList.remove('hidden');
+            
+            if (db) {
+                try {
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                    const { doc, setDoc } = window.firebaseModules;
+                    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', roomKey);
+                    await setDoc(roomRef, { fen: game.fen(), lastUpdated: Date.now() });
+                } catch(e) {
+                    console.error("Cloud-Raum Erstellung fehlgeschlagen", e);
+                }
+            }
+            listenToRoom(roomKey);
+        }
+
+        window.shareViaWhatsApp = function() {
+            const text = encodeURIComponent("Lass uns eine Runde edles Holz-Schach spielen! Klicke einfach auf diesen Link, um direkt als Schwarz beizutreten: " + shareableLink);
+            window.open("https://api.whatsapp.com/send?text=" + text, "_blank");
+        }
+
+        window.copyRoomLink = function() {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(shareableLink).then(() => {
+                    document.getElementById('copy-feedback').innerText = 'Link kopiert!';
+                    setTimeout(() => { document.getElementById('copy-feedback').innerText = ''; }, 2000);
+                });
+            } else {
+                const tempInput = document.createElement('input');
+                tempInput.value = shareableLink;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                document.getElementById('copy-feedback').innerText = 'Link kopiert!';
+                setTimeout(() => { document.getElementById('copy-feedback').innerText = ''; }, 2000);
+            }
+        }
+
+        window.closeRoomLinkModal = function() {
+            document.getElementById('room-link-modal').classList.add('hidden');
+            gameMode = 'online';
+            document.getElementById('game-info-badge').innerText = 'Online (Du bist Weiß)';
+            switchScreen('game');
+            renderBoard();
+            updateStatus();
+        }
+
+        window.joinWhatsAppRoom = function() {
+            let inputVal = document.getElementById('room-code-input').value.trim();
+            if (!inputVal) return;
+
+            let roomKey = '';
+            if (inputVal.includes('room=')) {
+                try {
+                    const urlObj = new URL(inputVal.includes('http') ? inputVal : 'https://' + inputVal);
+                    roomKey = urlObj.searchParams.get('room');
+                } catch(e) {
+                    const parts = inputVal.split('room=');
+                    roomKey = parts[1].split('&')[0];
+                }
+            } else {
+                roomKey = inputVal;
+            }
+
+            if (!roomKey) {
+                showNotification("Fehler", "Ungültiger Link oder Raum-Code.");
+                return;
+            }
+
+            closeModals();
+            playerColor = 'b';
+            boardFlipped = true;
+            game = new Chess();
+            gameMode = 'online';
+            currentRoomId = roomKey;
+            document.getElementById('game-info-badge').innerText = 'Online (Du bist Schwarz)';
+            switchScreen('game');
+            renderBoard();
+            updateStatus();
+
+            listenToRoom(roomKey);
+        }
+
+        function listenToRoom(roomKey) {
+            if (!db) return;
+            if (unsubscribeRoom) { unsubscribeRoom(); }
+            
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const { doc, onSnapshot } = window.firebaseModules;
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', roomKey);
+                
+                unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data && data.fen && data.fen !== game.fen()) {
+                            isRemoteUpdate = true;
+                            game.load(data.fen);
+                            isRemoteUpdate = false;
+                            renderBoard();
+                            updateStatus();
+                            checkGameOver();
+                        }
+                    }
+                }, (error) => {
+                    console.error("Firestore error", error);
+                });
+            } catch(e) {
+                console.error("Listening to room error", e);
+            }
+        }
+
+        async function syncMoveToCloud() {
+            if (!db || !currentRoomId || isRemoteUpdate) return;
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const { doc, setDoc } = window.firebaseModules;
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', currentRoomId);
+                await setDoc(roomRef, { fen: game.fen(), lastUpdated: Date.now() });
+            } catch(e) {
+                console.error("Sync move error", e);
+            }
+        }
+
+        window.flipBoard = function() {
+            boardFlipped = !boardFlipped;
+            renderBoard();
+        }
+
+        function showNotification(title, desc) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('message-modal').classList.remove('hidden');
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+
+            const boardState = game.board();
+            let rows = [0, 1, 2, 3, 4, 5, 6, 7];
+            let cols = [0, 1, 2, 3, 4, 5, 6, 7];
+
+            if (boardFlipped) {
+                rows.reverse();
+                cols.reverse();
+            }
+
+            for (let r of rows) {
+                for (let c of cols) {
+                    const squareDiv = document.createElement('div');
+                    const isDark = (r + c) % 2 === 1;
+                    squareDiv.className = `square ${isDark ? 'dark' : 'light'}`;
+
+                    const file = String.fromCharCode(97 + c);
+                    const rank = 8 - r;
+                    const squareId = file + rank;
+
+                    squareDiv.dataset.square = squareId;
+
+                    if (selectedSquare === squareId) {
+                        squareDiv.classList.add('selected');
+                    }
+
+                    if (possibleMoves.includes(squareId)) {
+                        squareDiv.classList.add('highlighted');
+                    }
+
+                    const piece = boardState[r][c];
+                    if (piece) {
+                        const pieceSpan = document.createElement('span');
+                        const pieceColorClass = piece.color === 'w' 
+                            ? 'text-amber-50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] font-bold' 
+                            : 'text-zinc-950 drop-shadow-[0_1px_3px_rgba(255,255,255,0.45)] font-bold';
+                        pieceSpan.className = `piece ${pieceColorClass}`;
+                        pieceSpan.innerText = pieceUnicode[piece.type];
+                        squareDiv.appendChild(pieceSpan);
+                    }
+
+                    squareDiv.addEventListener('click', () => handleSquareClick(squareId));
+                    boardEl.appendChild(squareDiv);
+                }
+            }
+        }
+
+        function handleSquareClick(squareId) {
+            if (gameMode === 'online' && game.turn() !== playerColor) {
+                return;
+            }
+            if (gameMode === 'ai' && game.turn() === 'b') return;
+
+            const piece = game.get(squareId);
+
+            if (selectedSquare === null) {
+                if (piece && piece.color === game.turn()) {
+                    selectedSquare = squareId;
+                    possibleMoves = game.moves({ square: squareId, verbose: true }).map(m => m.to);
+                    renderBoard();
+                }
+            } else {
+                if (possibleMoves.includes(squareId)) {
+                    const move = game.move({
+                        from: selectedSquare,
+                        to: squareId,
+                        promotion: 'q'
+                    });
+
+                    if (move) {
+                        selectedSquare = null;
+                        possibleMoves = [];
+                        renderBoard();
+                        updateStatus();
+                        checkGameOver();
+
+                        if (gameMode === 'online') {
+                            syncMoveToCloud();
+                        } else if (gameMode === 'ai' && !game.game_over()) {
+                            setTimeout(makeAiMove, 350);
+                        }
+                        return;
+                    }
+                }
+
+                if (piece && piece.color === game.turn()) {
+                    selectedSquare = squareId;
+                    possibleMoves = game.moves({ square: squareId, verbose: true }).map(m => m.to);
+                } else {
+                    selectedSquare = null;
+                    possibleMoves = [];
+                }
+                renderBoard();
+            }
+        }
+
+        function updateStatus() {
+            const turn = game.turn();
+            const turnText = document.getElementById('turn-text');
+            const indicator = document.getElementById('turn-indicator');
+
+            if (turn === 'w') {
+                turnText.innerText = 'Weiß ist am Zug';
+                indicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-100 shadow-sm border border-amber-300';
+            } else {
+                turnText.innerText = 'Schwarz ist am Zug';
+                indicator.className = 'w-2.5 h-2.5 rounded-full bg-zinc-950 border border-amber-600 shadow-sm';
+            }
+        }
+
+        function checkGameOver() {
+            if (game.in_checkmate()) {
+                const winner = game.turn() === 'w' ? 'Schwarz' : 'Weiß';
+                showNotification("Schachmatt!", `${winner} hat das Spiel gewonnen!`);
+            } else if (game.in_draw()) {
+                showNotification("Unentschieden", "Das Spiel endet Remis.");
+            }
+        }
+
+        function makeAiMove() {
+            if (game.game_over()) return;
+            const moves = game.moves({ verbose: true });
+            if (moves.length === 0) return;
+
+            let chosenMove;
+            if (aiDifficulty === 'easy') {
+                chosenMove = moves[Math.floor(Math.random() * moves.length)];
+            } else if (aiDifficulty === 'medium') {
+                const capturingMoves = moves.filter(m => m.captured);
+                if (capturingMoves.length > 0 && Math.random() < 0.75) {
+                    chosenMove = capturingMoves[Math.floor(Math.random() * capturingMoves.length)];
+                } else {
+                    chosenMove = moves[Math.floor(Math.random() * moves.length)];
+                }
+            } else {
+                let bestScore = -9999;
+                let bestMoves = [];
+                for (let m of moves) {
+                    game.move(m);
+                    let score = evaluateBoard(game);
+                    game.undo();
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMoves = [m];
+                    } else if (score === bestScore) {
+                        bestMoves.push(m);
+                    }
+                }
+                chosenMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+            }
+
+            game.move(chosenMove);
+            renderBoard();
+            updateStatus();
+            checkGameOver();
+        }
+
+        function evaluateBoard(chessInstance) {
+            let totalEvaluation = 0;
+            const board = chessInstance.board();
+            const pieceValues = { p: 10, n: 30, b: 30, r: 50, q: 90, k: 900 };
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const piece = board[r][c];
+                    if (piece) {
+                        const val = pieceValues[piece.type];
+                        totalEvaluation += (piece.color === 'b' ? val : -val);
+                    }
+                }
+            }
+            return totalEvaluation;
+        }
+    </script>
+</body>
+</html>
