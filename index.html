@@ -3,37 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Edles Holz-Schach Deluxe - GitHub & WhatsApp Edition</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Edles Holz-Schach Deluxe - GitHub Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.firebaseModules = { initializeApp, getAuth, signInAnonymously, getFirestore, doc, setDoc, onSnapshot };
-    </script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: { dark: '#0f0e0d', card: '#1a1714', woodDark: '#5c3a21', woodLight: '#d2b48c', accent: '#d97706' }
-                    },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] }
-                }
-            }
-        }
-    </script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f0e0d !important;
-            color: #f3f4f6 !important;
-            touch-action: manipulation;
+        * {
+            box-sizing: border-box;
             user-select: none;
             -webkit-user-select: none;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f0e0d;
+            color: #f3f4f6;
             margin: 0;
             padding: 0;
             height: 100vh;
@@ -43,15 +26,70 @@
             flex-direction: column;
             justify-content: space-between;
         }
+        header {
+            background: linear-gradient(135deg, #2d1a0e 0%, #1a0f08 100%);
+            border-bottom: 1px solid rgba(146, 64, 14, 0.4);
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            max-width: 480px;
+            margin: 0 auto;
+            width: 100%;
+            overflow: hidden;
+        }
+        .menu-karte {
+            background-color: #1a1714;
+            border: 1px solid rgba(146, 64, 14, 0.3);
+            border-radius: 20px;
+            padding: 16px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .menue-button {
+            width: 100%;
+            background: #24201c;
+            border: 1px solid rgba(146, 64, 14, 0.4);
+            border-radius: 14px;
+            padding: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+        .menue-button:active {
+            transform: scale(0.97);
+            background: #2e2925;
+        }
         .board-container {
             width: 100%;
-            max-width: min(98vw, 85vh);
+            max-width: min(98vw, 84vh);
             aspect-ratio: 1 / 1;
-            margin: 0 auto;
+            background-color: #1a1714;
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid rgba(146, 64, 14, 0.4);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.9);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-sizing: border-box;
         }
         .board-grid {
             display: grid;
@@ -59,10 +97,9 @@
             grid-template-rows: repeat(8, 1fr);
             width: 100%;
             height: 100%;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.9), inset 0 2px 5px rgba(255,255,255,0.1);
-            border: 4px solid #2d1a0e;
-            border-radius: 8px;
-            box-sizing: border-box;
+            border: 2px solid #2d1a0e;
+            border-radius: 6px;
+            overflow: hidden;
         }
         .square {
             display: flex;
@@ -71,8 +108,6 @@
             position: relative;
             width: 100%;
             height: 100%;
-            overflow: hidden;
-            box-sizing: border-box;
         }
         .square.light {
             background: linear-gradient(135deg, #e6c594 0%, #d2b48c 100%) !important;
@@ -86,284 +121,223 @@
         .square.highlighted::after {
             content: '';
             position: absolute;
-            width: 26%;
-            height: 26%;
+            width: 28%;
+            height: 28%;
             background-color: rgba(217, 119, 6, 0.95);
             border-radius: 50%;
-            box-shadow: 0 0 6px rgba(217,119,6,0.9);
         }
         .piece {
-            font-size: min(11.5vw, 62px);
+            font-size: min(11.5vw, 60px);
             display: flex;
             align-items: center;
             justify-content: center;
             line-height: 1;
             width: 100%;
             height: 100%;
-            text-align: center;
             position: absolute;
             top: 0;
             left: 0;
-            cursor: grab;
+            cursor: pointer;
         }
-        .piece:active {
-            cursor: grabbing;
-            transform: scale(1.1);
+        .piece.white-piece {
+            color: #ffffff !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.8);
+        }
+        .piece.black-piece {
+            color: #111111 !important;
+            text-shadow: 0 1px 3px rgba(255,255,255,0.5), 0 0 2px rgba(255,255,255,0.3);
         }
         .modal-overlay {
+            position: fixed;
+            inset: 0;
             background-color: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(6px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
         }
-        .wood-border {
-            background: linear-gradient(135deg, #2d1a0e 0%, #1a0f08 100%) !important;
+        .modal-box {
+            background-color: #1a1714;
+            border: 1px solid rgba(146, 64, 14, 0.4);
+            border-radius: 20px;
+            padding: 18px;
+            width: 100%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
+        .hidden { display: none !important; }
+        .flex { display: flex; }
     </style>
 </head>
-<body class="overflow-hidden bg-[#0f0e0d] text-white">
+<body>
 
-    <header class="w-full wood-border border-b border-amber-900/40 px-3 py-2 flex items-center justify-between shadow-xl shrink-0">
-        <div class="flex items-center space-x-2">
-            <div class="bg-amber-700 text-amber-100 p-1.5 rounded-lg shadow-inner border border-amber-600">
-                <i class="fa-solid fa-chess text-xs"></i>
+    <header>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="background: #92400e; color: #fef3c7; padding: 6px; border-radius: 8px;">
+                <i class="fa-solid fa-chess"></i>
             </div>
             <div>
-                <h1 class="font-bold text-xs tracking-wide text-amber-100">Edles Holz-Schach</h1>
-                <p id="room-status-badge" class="text-[9px] text-amber-400/80">GitHub & WhatsApp Edition</p>
+                <h1 style="font-size: 13px; font-weight: 700; margin: 0; color: #fef3c7;">Edles Holz-Schach</h1>
+                <p id="status-badge" style="font-size: 10px; margin: 0; color: #d97706;">GitHub Edition</p>
             </div>
         </div>
-        <div class="flex items-center space-x-1.5">
-            <button onclick=" OeffneRegelnModal()" class="bg-amber-950/80 hover:bg-amber-900 text-amber-200 px-2 py-1 rounded-lg text-xs font-medium transition active:scale-95 border border-amber-800/50 flex items-center gap-1">
-                <i class="fa-solid fa-circle-question"></i> Hilfe
-            </button>
-            <button onclick="sicheresZurueckZumMenue()" class="bg-amber-950/80 hover:bg-amber-900 text-amber-200 px-2 py-1 rounded-lg text-xs font-medium transition active:scale-95 border border-amber-800/50 flex items-center gap-1">
-                <i class="fa-solid fa-house"></i> Menü
-            </button>
+        <div style="display: flex; gap: 6px;">
+            <button onclick="oeffneHilfe()" style="background: #2d1a0e; border: 1px solid #78350f; color: #fde68a; padding: 5px 9px; border-radius: 8px; font-size: 11px; cursor: pointer;">Hilfe</button>
+            <button onclick="sicheresZurueckZumMenue()" style="background: #2d1a0e; border: 1px solid #78350f; color: #fde68a; padding: 5px 9px; border-radius: 8px; font-size: 11px; cursor: pointer;">Menü</button>
         </div>
     </header>
 
-    <main class="flex-1 flex flex-col items-center justify-between p-1 max-w-lg mx-auto w-full my-auto overflow-hidden">
-
-        <!-- Hauptmenü Bildschirm -->
-        <div id="menu-screen" class="w-full bg-[#1a1714] p-5 rounded-3xl border border-amber-900/30 shadow-2xl space-y-4 my-auto">
-            <div class="text-center space-y-1">
-                <h2 class="text-xl font-bold tracking-tight text-amber-100 font-serif">Holzschach Deluxe</h2>
-                <p class="text-xs text-zinc-400">Volle Bildschirmgröße für Samsung Galaxy A55.</p>
+    <main>
+        <div id="menu-bildschirm" class="menu-karte">
+            <div style="text-align: center;">
+                <h2 style="font-size: 17px; font-weight: bold; margin: 0 0 4px 0; color: #fef3c7; font-family: serif;">Holzschach Deluxe</h2>
+                <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Volle Größe & perfekte Lesbarkeit.</p>
             </div>
 
-            <div class="space-y-2.5 pt-1">
-                <button onclick="zeigeOnlineModal()" class="w-full bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-600 hover:to-amber-700 text-amber-100 font-semibold py-3 px-3.5 rounded-2xl shadow-lg transition active:scale-95 flex items-center justify-between group border border-amber-600/30">
-                    <div class="flex items-center gap-2.5">
-                        <div class="bg-amber-950/60 p-2 rounded-xl border border-amber-700/40 text-amber-300">
-                            <i class="fa-brands fa-whatsapp text-base"></i>
-                        </div>
-                        <div class="text-left">
-                            <div class="text-xs font-bold">Online per WhatsApp</div>
-                            <div class="text-[10px] text-amber-200/70">Ohne Passwort & sofort spielbar</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button onclick="starteLokalSpiel()" class="menue-button">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="background: rgba(146,64,14,0.3); padding: 8px; border-radius: 10px; color: #f59e0b;"><i class="fa-solid fa-user-group"></i></div>
+                        <div style="text-align: left;">
+                            <div style="font-weight: bold;">Zu zweit an einem Gerät</div>
+                            <div style="font-size: 10px; color: #a1a1aa;">Lokal spielen</div>
                         </div>
                     </div>
-                    <i class="fa-solid fa-chevron-right text-xs opacity-80 group-hover:translate-x-1 transition-transform text-amber-300"></i>
+                    <i class="fa-solid fa-chevron-right" style="color: #f59e0b;"></i>
                 </button>
 
-                <button onclick="zeigeKiSchwierigkeitModal()" class="w-full bg-[#24201c] hover:bg-[#2e2925] text-white font-semibold py-3 px-3.5 rounded-2xl border border-amber-900/40 transition active:scale-95 flex items-center justify-between group">
-                    <div class="flex items-center gap-2.5">
-                        <div class="bg-amber-900/30 p-2 rounded-xl text-amber-400 border border-amber-800/30">
-                            <i class="fa-solid fa-robot text-base"></i>
-                        </div>
-                        <div class="text-left">
-                            <div class="text-xs font-bold">Gegen KI spielen</div>
-                            <div class="text-[10px] text-zinc-400">Einstellbare Schwierigkeit</div>
+                <button onclick="oeffneKiModal()" class="menue-button">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="background: rgba(146,64,14,0.3); padding: 8px; border-radius: 10px; color: #f59e0b;"><i class="fa-solid fa-robot"></i></div>
+                        <div style="text-align: left;">
+                            <div style="font-weight: bold;">Gegen Computer (KI)</div>
+                            <div style="font-size: 10px; color: #a1a1aa;">Leicht, Mittel, Schwer</div>
                         </div>
                     </div>
-                    <i class="fa-solid fa-chevron-right text-xs opacity-80 group-hover:translate-x-1 transition-transform text-amber-400"></i>
+                    <i class="fa-solid fa-chevron-right" style="color: #f59e0b;"></i>
                 </button>
 
-                <button onclick="starteLokalSpiel()" class="w-full bg-[#24201c] hover:bg-[#2e2925] text-white font-semibold py-3 px-3.5 rounded-2xl border border-amber-900/40 transition active:scale-95 flex items-center justify-between group">
-                    <div class="flex items-center gap-2.5">
-                        <div class="bg-amber-900/30 p-2 rounded-xl text-amber-400 border border-amber-800/30">
-                            <i class="fa-solid fa-user-group text-base"></i>
-                        </div>
-                        <div class="text-left">
-                            <div class="text-xs font-bold">Lokal zu zweit</div>
-                            <div class="text-[10px] text-zinc-400">Am selben Smartphone spielen</div>
+                <button onclick="oeffneTeilenModal()" class="menue-button" style="background: #065f46; border-color: #047857;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="background: rgba(255,255,255,0.2); padding: 8px; border-radius: 10px; color: #ffffff;"><i class="fa-solid fa-share-nodes"></i></div>
+                        <div style="text-align: left;">
+                            <div style="font-weight: bold;">Online-Link erstellen</div>
+                            <div style="font-size: 10px; color: #d1fae5;">Teilen & Kopieren</div>
                         </div>
                     </div>
-                    <i class="fa-solid fa-chevron-right text-xs opacity-80 group-hover:translate-x-1 transition-transform text-amber-400"></i>
+                    <i class="fa-solid fa-arrow-right" style="color: #ffffff;"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Spiel-Bildschirm (Maximiertes Schachbrett) -->
-        <div id="game-screen" class="w-full flex-col space-y-1.5 hidden items-center justify-center my-auto">
-            <div class="w-full flex items-center justify-between bg-[#1a1714] px-3.5 py-1.5 rounded-xl border border-amber-900/30 shadow-md">
-                <div class="flex items-center gap-2">
-                    <div id="zug-indikator" class="w-2.5 h-2.5 rounded-full bg-amber-200 shadow-sm"></div>
-                    <span id="zug-text" class="text-xs font-semibold text-amber-100">Weiß ist am Zug</span>
+        <div id="spiel-bildschirm" class="hidden" style="flex-direction: column; width: 100%; gap: 6px; align-items: center;">
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; background: #1a1714; padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(146,64,14,0.3);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div id="zug-punkt" style="width: 10px; height: 10px; border-radius: 50%; background: #fef3c7;"></div>
+                    <span id="zug-text" style="font-size: 12px; font-weight: 600; color: #fef3c7;">Weiß ist am Zug</span>
                 </div>
-                <div id="spiel-info-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-950/80 text-amber-300 border border-amber-800/40">Lokales Spiel</div>
+                <span id="modus-badge" style="font-size: 10px; font-weight: bold; background: #2d1a0e; color: #fcd34d; padding: 3px 8px; border-radius: 6px; border: 1px solid #78350f;">Lokal</span>
             </div>
 
-            <!-- Maximiertes Holz-Schachbrett -->
-            <div class="board-container bg-[#1a1714] p-1 rounded-2xl border border-amber-900/40 shadow-2xl">
-                <div id="board" class="board-grid rounded-lg overflow-hidden shadow-inner"></div>
+            <div class="board-container">
+                <div id="board" class="board-grid"></div>
             </div>
 
-            <div class="w-full flex items-center justify-between bg-[#1a1714] px-3.5 py-1.5 rounded-xl border border-amber-900/30 text-xs shadow-md">
-                <div class="flex flex-col">
-                    <span class="text-zinc-400 text-[9px]">Status:</span>
-                    <span id="status-text" class="font-bold text-amber-200 tracking-wider text-xs">Bereit</span>
-                </div>
-                <div class="flex gap-1.5">
-                    <button onclick="dreheBrett()" class="bg-amber-950/80 hover:bg-amber-900 text-amber-200 px-2.5 py-1.5 rounded-xl text-xs font-medium transition active:scale-95 border border-amber-800/40 flex items-center gap-1">
-                        <i class="fa-solid fa-rotate"></i> Drehen
-                    </button>
-                    <button onclick="sicheresZurueckZumMenue()" class="bg-red-500/15 hover:bg-red-500/25 text-red-400 px-2.5 py-1.5 rounded-xl text-xs font-medium transition active:scale-95 border border-red-500/30">
-                        Beenden
-                    </button>
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; background: #1a1714; padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(146,64,14,0.3);">
+                <span id="status-meldung" style="font-size: 11px; font-weight: bold; color: #fcd34d;">Bereit</span>
+                <div style="display: flex; gap: 6px;">
+                    <button onclick="dreheBrett()" style="background: #2d1a0e; border: 1px solid #78350f; color: #fde68a; padding: 5px 9px; border-radius: 8px; font-size: 11px; cursor: pointer;"><i class="fa-solid fa-rotate"></i> Drehen</button>
+                    <button onclick="sicheresZurueckZumMenue()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 5px 9px; border-radius: 8px; font-size: 11px; cursor: pointer;">Beenden</button>
                 </div>
             </div>
         </div>
-
     </main>
 
-    <!-- Sicherheitsabfrage Modal -->
-    <div id="bestaetigungs-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm text-center space-y-4 shadow-2xl">
-            <div class="w-12 h-12 bg-amber-950 text-amber-400 border border-amber-800/50 rounded-2xl flex items-center justify-center mx-auto text-xl shadow-inner">
+    <div id="bestaetigungs-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div style="width: 40px; height: 40px; background: #2d1a0e; color: #f59e0b; border: 1px solid #78350f; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
-            <div class="space-y-1">
-                <h3 class="text-base font-bold text-amber-100 font-serif">Willst du wirklich?</h3>
-                <p class="text-xs text-zinc-400">Dein aktuelles Spiel wird unterbrochen und du kehrst ins Hauptmenü zurück.</p>
+            <div>
+                <h3 style="font-size: 15px; font-weight: bold; color: #fef3c7; margin: 0 0 4px 0; font-family: serif;">Willst du wirklich?</h3>
+                <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Dein aktuelles Spiel wird abgebrochen und du kehrst ins Hauptmenü zurück.</p>
             </div>
-            <div class="flex gap-2 pt-1">
-                <button onclick="schliesseAlleModale()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold py-2.5 rounded-2xl text-xs transition active:scale-95 border border-zinc-700">
-                    Nein, weiterspielen
+            <div style="display: flex; gap: 8px; margin-top: 2px;">
+                <button onclick="schliesseAlleModale()" style="flex: 1; background: #27272a; border: 1px solid #3f3f46; color: #f4f4f5; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer;">Nein, weiter</button>
+                <button onclick="fuhreAusZurueckZumMenue()" style="flex: 1; background: #dc2626; border: none; color: white; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer;">Ja, beenden</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="teilen-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 14px; font-weight: bold; color: #fef3c7; margin: 0; font-family: serif;">Online-Spiel teilen</h3>
+                <button onclick="schliesseAlleModale()" style="background: none; border: none; color: #a1a1aa; font-size: 15px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Kopiere den Link oder öffne das Teilen-Menü deines Handys:</p>
+            <input type="text" id="spiel-link-input" readonly style="width: 100%; background: #11100e; border: 1px solid #78350f; color: #fef3c7; padding: 8px; border-radius: 8px; font-size: 11px; text-align: center;" />
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <button onclick="kopiereLink()" class="menue-button" style="padding: 10px; justify-content: center; gap: 8px; background: #2d1a0e;">
+                    <i class="fa-solid fa-copy" style="color: #f59e0b;"></i> Link in Zwischenablage kopieren
                 </button>
-                <button onclick="fuhreAusZurueckZumMenue()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-2.5 rounded-2xl text-xs transition shadow-lg active:scale-95">
-                    Ja, beenden
+                <button onclick="oeffneSystemTeilenMenue()" class="menue-button" style="padding: 10px; justify-content: center; gap: 8px; background: #065f46; border-color: #047857;">
+                    <i class="fa-solid fa-share-nodes" style="color: #ffffff;"></i> Handy-Teilen-Menü öffnen
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Online WhatsApp Modal -->
-    <div id="online-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm space-y-3.5 shadow-2xl">
-            <div class="flex justify-between items-center">
-                <h3 class="text-base font-bold text-amber-100 font-serif">WhatsApp Duell</h3>
-                <button onclick="schliesseAlleModale()" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-base"></i></button>
+    <div id="ki-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 14px; font-weight: bold; color: #fef3c7; margin: 0; font-family: serif;">Schwierigkeit wählen</h3>
+                <button onclick="schliesseAlleModale()" style="background: none; border: none; color: #a1a1aa; font-size: 15px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-[11px] text-zinc-400 leading-relaxed">Erstelle deinen persönlichen Einladungslink für WhatsApp – ganz ohne Passwort!</p>
-            
-            <div class="space-y-2.5 pt-1">
-                <button onclick="erstelleWhatsAppRaum()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-2xl text-xs transition shadow-lg active:scale-95 flex items-center justify-center gap-2">
-                    <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp Link erstellen
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <button onclick="starteKiSpiel('leicht')" class="menue-button" style="padding: 10px;">
+                    <div style="text-align: left;"><div style="font-weight: bold;">Leicht (Anfänger)</div><div style="font-size: 10px; color: #a1a1aa;">Zufällige Züge</div></div>
+                    <i class="fa-solid fa-face-smile" style="color: #f59e0b;"></i>
                 </button>
-                
-                <div class="relative flex py-0.5 items-center">
-                    <div class="flex-grow border-t border-amber-900/30"></div>
-                    <span class="flex-shrink mx-3 text-zinc-500 text-[10px] uppercase">oder beitreten</span>
-                    <div class="flex-grow border-t border-amber-900/30"></div>
-                </div>
-
-                <div class="flex gap-2">
-                    <input type="text" id="raum-code-input" placeholder="Link hier einfügen..." class="flex-1 bg-zinc-900 border border-amber-900/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
-                    <button onclick="treteWhatsAppRaumBei()" class="bg-amber-900 hover:bg-amber-800 text-amber-100 font-semibold px-3.5 py-2 rounded-xl text-xs transition active:scale-95 border border-amber-700/40">Spielen</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- KI Schwierigkeit Modal -->
-    <div id="ki-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm space-y-3.5 shadow-2xl">
-            <div class="flex justify-between items-center">
-                <h3 class="text-base font-bold text-amber-100 font-serif">Schwierigkeit wählen</h3>
-                <button onclick="schliesseAlleModale()" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-base"></i></button>
-            </div>
-            <p class="text-[11px] text-zinc-400">Wähle, wie clever der Computergegner spielen soll.</p>
-            
-            <div class="space-y-2 pt-1">
-                <button onclick="starteKiSpiel('leicht')" class="w-full bg-[#24201c] hover:bg-[#2e2925] text-left p-3 rounded-2xl border border-amber-900/40 transition active:scale-95 flex items-center justify-between">
-                    <div>
-                        <div class="text-xs font-bold text-amber-100">Leicht (Anfänger)</div>
-                        <div class="text-[10px] text-zinc-400">Zufällige Züge zum Entspannen</div>
-                    </div>
-                    <i class="fa-solid fa-face-smile text-amber-400 text-base"></i>
+                <button onclick="starteKiSpiel('mittel')" class="menue-button" style="padding: 10px;">
+                    <div style="text-align: left;"><div style="font-weight: bold;">Mittel (Fortgeschritten)</div><div style="font-size: 10px; color: #a1a1aa;">Achtet auf Schläge</div></div>
+                    <i class="fa-solid fa-face-grimace" style="color: #f59e0b;"></i>
                 </button>
-                <button onclick="starteKiSpiel('mittel')" class="w-full bg-[#24201c] hover:bg-[#2e2925] text-left p-3 rounded-2xl border border-amber-900/40 transition active:scale-95 flex items-center justify-between">
-                    <div>
-                        <div class="text-xs font-bold text-amber-100">Mittel (Fortgeschritten)</div>
-                        <div class="text-[10px] text-zinc-400">Achtet auf Material & Schläge</div>
-                    </div>
-                    <i class="fa-solid fa-face-grimace text-amber-400 text-base"></i>
-                </button>
-                <button onclick="starteKiSpiel('schwer')" class="w-full bg-[#24201c] hover:bg-[#2e2925] text-left p-3 rounded-2xl border border-amber-900/40 transition active:scale-95 flex items-center justify-between">
-                    <div>
-                        <div class="text-xs font-bold text-amber-100">Schwer (Profi)</div>
-                        <div class="text-[10px] text-zinc-400">Tiefere Vorausschau</div>
-                    </div>
-                    <i class="fa-solid fa-brain text-amber-400 text-base"></i>
+                <button onclick="starteKiSpiel('schwer')" class="menue-button" style="padding: 10px;">
+                    <div style="text-align: left;"><div style="font-weight: bold;">Schwer (Profi)</div><div style="font-size: 10px; color: #a1a1aa;">Tiefere Vorausschau</div></div>
+                    <i class="fa-solid fa-brain" style="color: #f59e0b;"></i>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Link Teilen Modal -->
-    <div id="raum-link-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm space-y-3.5 shadow-2xl text-center">
-            <div class="w-11 h-11 bg-emerald-950 text-emerald-400 border border-emerald-800/50 rounded-2xl flex items-center justify-center mx-auto text-lg shadow-inner">
-                <i class="fa-brands fa-whatsapp"></i>
+    <div id="nachricht-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div style="width: 40px; height: 40px; background: #2d1a0e; color: #f59e0b; border: 1px solid #78350f; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">
+                <i class="fa-solid fa-trophy"></i>
             </div>
-            <div class="space-y-1">
-                <h3 class="text-base font-bold text-amber-100 font-serif">Dein WhatsApp-Link</h3>
-                <p class="text-[11px] text-zinc-400">Teile diesen Link per WhatsApp. Der Mitspieler klickt drauf und ist sofort im Spiel!</p>
+            <div>
+                <h3 id="modal-titel" style="font-size: 15px; font-weight: bold; color: #fef3c7; margin: 0 0 4px 0; font-family: serif;">Spiel beendet</h3>
+                <p id="modal-beschreibung" style="font-size: 11px; color: #a1a1aa; margin: 0;">Das Spiel ist vorbei.</p>
             </div>
-            <div class="bg-zinc-900 p-2.5 rounded-xl border border-amber-900/50 flex items-center justify-between">
-                <span id="zeige-raum-code" class="text-[10px] font-mono text-amber-400 font-bold truncate max-w-[180px]">---</span>
-                <button onclick="kopiereRaumLink()" class="bg-amber-700 hover:bg-amber-600 text-amber-100 text-[11px] px-2.5 py-1.5 rounded-lg transition shrink-0">Kopieren</button>
-            </div>
-            <p id="kopier-feedback" class="text-[10px] text-green-400 h-3"></p>
-            
-            <div class="space-y-2 pt-1">
-                <button onclick="sendeViaWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-2xl text-xs transition shadow-lg active:scale-95 flex items-center justify-center gap-2">
-                    <i class="fa-brands fa-whatsapp text-sm"></i> Direkt per WhatsApp senden
-                </button>
-                <button onclick="schliesseRaumLinkModal()" class="w-full bg-amber-950/80 hover:bg-amber-900 text-amber-200 font-semibold py-2.5 rounded-2xl text-xs transition active:scale-95 border border-amber-800/40">
-                    Spiel starten (Weiß)
-                </button>
-            </div>
+            <button onclick="fuhreAusZurueckZumMenue()" style="width: 100%; background: #b45309; border: 1px solid #d97706; color: white; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer;">Zurück zum Menü</button>
         </div>
     </div>
 
-    <!-- Benachrichtigungs-Modal -->
-    <div id="nachricht-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm text-center space-y-3.5 shadow-2xl">
-            <div class="w-12 h-12 bg-amber-950 text-amber-400 border border-amber-800/50 rounded-2xl flex items-center justify-center mx-auto text-xl shadow-inner">
-                <i id="modal-icon" class="fa-solid fa-trophy"></i>
+    <div id="hilfe-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 14px; font-weight: bold; color: #fef3c7; margin: 0; font-family: serif;">Hilfe & Infos</h3>
+                <button onclick="schliesseAlleModale()" style="background: none; border: none; color: #a1a1aa; font-size: 15px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="space-y-1">
-                <h3 id="modal-titel" class="text-base font-bold text-amber-100 font-serif">Spiel beendet</h3>
-                <p id="modal-beschreibung" class="text-xs text-zinc-400">Matt! Das Spiel ist vorbei.</p>
-            </div>
-            <button onclick="schliesseNachrichtModal()" class="w-full bg-amber-700 hover:bg-amber-600 text-amber-100 font-semibold py-2.5 rounded-2xl text-xs transition shadow-lg active:scale-95 border border-amber-600/40">
-                Zurück zum Menü
-            </button>
-        </div>
-    </div>
-
-    <!-- Hilfe / Regeln Modal -->
-    <div id="regeln-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-[#1a1714] border border-amber-900/40 rounded-3xl p-5 w-full max-w-sm space-y-3.5 shadow-2xl max-h-[80vh] overflow-y-auto">
-            <div class="flex justify-between items-center">
-                <h3 class="text-base font-bold text-amber-100 font-serif">GitHub & WhatsApp Hilfe</h3>
-                <button onclick="schliesseRegelnModal()" class="text-zinc-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-base"></i></button>
-            </div>
-            <div class="text-[11px] text-zinc-300 space-y-2.5 leading-relaxed">
-                <p><strong>1. GitHub Pages:</strong> Dein Spiel läuft unter deiner echten GitHub-Adresse (<code class="text-amber-400">https://swi64.github.io/Schach/</code>).</p>
-                <p><strong>2. WhatsApp Duell:</strong> Erstelle einen Online-Raum, teile den Link per WhatsApp. Der Mitspieler klickt darauf und landet direkt im Spiel!</p>
-            </div>
-            <button onclick="schliesseRegelnModal()" class="w-full bg-amber-700 text-amber-100 font-semibold py-2.5 rounded-2xl text-xs transition border border-amber-600/40">Verstanden</button>
+            <p style="font-size: 11px; color: #d4d4d8; line-height: 1.4; margin: 0;">Dieses Spiel läuft direkt über GitHub Pages. Du kannst den Link kopieren oder über das Teilen-Menü deines Handys an Freunde senden!</p>
+            <button onclick="schliesseAlleModale()" style="width: 100%; background: #b45309; border: 1px solid #d97706; color: white; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center;">Verstanden</button>
         </div>
     </div>
 
@@ -376,121 +350,112 @@
         let schachSpiel = new Chess();
         let ausgewaehltesFeld = null;
         let moeglicheZuege = [];
-        let spielModus = 'menu';
+        let spielModus = 'lokal';
         let kiSchwierigkeit = 'mittel';
-        let spielerFarbe = 'w';
         let brettGedreht = false;
-        let geteilterLink = '';
-        let aktuellerRaumId = null;
-        let datenbank = null;
-        let authentifizierung = null;
-        let raumAbo = null;
-        let istRemoteZug = false;
+        let aktuellerTeilenLink = '';
 
-        // Feste GitHub Pages URL für deinen Account
-        const GITHUB_PAGES_BASIS_URL = 'https://swi64.github.io/Schach/';
-
-        window.addEventListener('load', async () => {
-            if (window.firebaseModules) {
-                try {
-                    const { initializeApp, getAuth, signInAnonymously, getFirestore } = window.firebaseModules;
-                    const firebaseKonfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-                        apiKey: "AIzaSyDummyKeyForLocalHostingMode",
-                        authDomain: "schach-deluxe.firebaseapp.com",
-                        projectId: "schach-deluxe"
-                    };
-                    const app = initializeApp(firebaseKonfig);
-                    authentifizierung = getAuth(app);
-                    datenbank = getFirestore(app);
-                    await signInAnonymously(authentifizierung);
-                } catch(e) {
-                    console.warn("Cloud-Verbindung im lokalen Modus aktiv", e);
-                }
-            }
-
-            const parameter = new URLSearchParams(window.location.search);
-            const raumParam = parameter.get('room');
-            const farbeParam = parameter.get('color');
-
-            // Wenn ein Online-Raum per Link aufgerufen wurde
+        // Automatische Erkennung des Link-Parameters beim Start (Online-Teilnehmer bekommt immer Weiß & gedrehtes Brett)
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const raumParam = urlParams.get('room');
             if (raumParam) {
-                aktuellerRaumId = raumParam;
-                spielerFarbe = farbeParam || 'b';
-                brettGedreht = (spielerFarbe === 'b');
                 spielModus = 'online';
-                
-                document.getElementById('spiel-info-badge').innerText = `Online (Du bist ${spielerFarbe === 'w' ? 'Weiß' : 'Schwarz'})`;
-                wechsleBildschirm('spiel');
+                schachSpiel = new Chess();
+                ausgewaehltesFeld = null;
+                moeglicheZuege = [];
+                brettGedreht = true; // Online-Spieler (Gast) schaut von unten auf Weiß
+                document.getElementById('modus-badge').innerText = 'Online-Spiel';
+                wechsleAnsicht('spiel');
                 erstelleBrettAnsicht();
                 aktualisiereStatus();
-                lauscheAufRaum(raumParam);
-            } else {
-                wechsleBildschirm('menu');
             }
         });
 
-        window.starteLokalSpiel = function() {
-            if (raumAbo) { raumAbo(); raumAbo = null; }
-            spielModus = 'local';
+        function starteLokalSpiel() {
+            spielModus = 'lokal';
             schachSpiel = new Chess();
             ausgewaehltesFeld = null;
             moeglicheZuege = [];
             brettGedreht = false;
-            document.getElementById('spiel-info-badge').innerText = 'Lokales Holz-Spiel';
-            wechsleBildschirm('spiel');
+            document.getElementById('modus-badge').innerText = 'Lokales Spiel';
+            wechsleAnsicht('spiel');
             erstelleBrettAnsicht();
             aktualisiereStatus();
         }
 
-        window.zeigeKiSchwierigkeitModal = function() {
+        function oeffneKiModal() {
             document.getElementById('ki-modal').classList.remove('hidden');
         }
 
-        window.starteKiSpiel = function(schwierigkeit) {
-            if (raumAbo) { raumAbo(); raumAbo = null; }
+        function starteKiSpiel(schwierigkeit) {
             kiSchwierigkeit = schwierigkeit;
-            spielModus = 'ai';
+            spielModus = 'ki';
             schachSpiel = new Chess();
             ausgewaehltesFeld = null;
             moeglicheZuege = [];
             brettGedreht = false;
-            document.getElementById('spiel-info-badge').innerText = `Holz-KI (${schwierigkeit.toUpperCase()})`;
+            document.getElementById('modus-badge').innerText = `KI (${schwierigkeit.toUpperCase()})`;
             schliesseAlleModale();
-            wechsleBildschirm('spiel');
+            wechsleAnsicht('spiel');
             erstelleBrettAnsicht();
             aktualisiereStatus();
         }
 
-        window.zeigeOnlineModal = function() {
-            document.getElementById('online-modal').classList.remove('hidden');
+        function oeffneTeilenModal() {
+            const raumId = 'schach_' + Math.random().toString(36).substring(2, 8);
+            
+            // Feste GitHub-Basis-URL mit automatischer Fallback-Erkennung
+            const webBaseUrl = "https://swi64.github.io/Schach/";
+            const baseUrl = window.location.protocol.startsWith('http') && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
+                ? window.location.origin + window.location.pathname 
+                : webBaseUrl;
+
+            aktuellerTeilenLink = baseUrl + '?room=' + raumId;
+            
+            document.getElementById('spiel-link-input').value = aktuellerTeilenLink;
+            document.getElementById('teilen-modal').classList.remove('hidden');
         }
 
-        window.schliesseAlleModale = function() {
-            document.getElementById('online-modal').classList.add('hidden');
-            document.getElementById('ki-modal').classList.add('hidden');
-            document.getElementById('raum-link-modal').classList.add('hidden');
-            document.getElementById('regeln-modal').classList.add('hidden');
-            document.getElementById('bestaetigungs-modal').classList.add('hidden');
+        function kopiereLink() {
+            const inputElement = document.getElementById('spiel-link-input');
+            inputElement.select();
+            document.execCommand('copy');
+            
+            // Elegante visuelle Rückmeldung ohne alert()
+            const originalText = inputElement.value;
+            inputElement.value = "✓ Link erfolgreich kopiert!";
+            setTimeout(() => {
+                inputElement.value = originalText;
+            }, 1500);
         }
 
-        window.OeffneRegelnModal = function() {
-            document.getElementById('regeln-modal').classList.remove('hidden');
-        }
-
-        window.schliesseRegelnModal = function() {
-            document.getElementById('regeln-modal').classList.add('hidden');
-        }
-
-        window.schliesseNachrichtModal = function() {
-            document.getElementById('nachricht-modal').classList.add('hidden');
-        }
-
-        // Sicheres Zurückkehren mit Sicherheitsabfrage
-        window.sicheresZurueckZumMenue = function() {
-            if (spielModus === 'menu') {
-                fuhreAusZurueckZumMenue();
-                return;
+        function oeffneSystemTeilenMenue() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Edles Holz-Schach',
+                    text: 'Lass uns eine Runde Schach spielen! Klicke hier um beizutreten:',
+                    url: aktuellerTeilenLink
+                }).catch((error) => console.log('Teilen abgebrochen', error));
+            } else {
+                kopiereLink();
             }
+        }
+
+        function oeffneHilfe() {
+            document.getElementById('hilfe-modal').classList.remove('hidden');
+        }
+
+        function schliesseAlleModale() {
+            document.getElementById('bestaetigungs-modal').classList.add('hidden');
+            document.getElementById('ki-modal').classList.add('hidden');
+            document.getElementById('nachricht-modal').classList.add('hidden');
+            document.getElementById('hilfe-modal').classList.add('hidden');
+            document.getElementById('teilen-modal').classList.add('hidden');
+        }
+
+        function sicheresZurueckZumMenue() {
+            if (spielModus === 'menue') return;
             if (schachSpiel && !schachSpiel.game_over()) {
                 document.getElementById('bestaetigungs-modal').classList.remove('hidden');
             } else {
@@ -498,174 +463,27 @@
             }
         }
 
-        window.fuhreAusZurueckZumMenue = function() {
+        function fuhreAusZurueckZumMenue() {
             schliesseAlleModale();
-            if (raumAbo) { raumAbo(); raumAbo = null; }
-            spielModus = 'menu';
-            aktuellerRaumId = null;
-            wechsleBildschirm('menu');
-            document.getElementById('room-status-badge').innerText = 'GitHub & WhatsApp Edition';
-            window.history.replaceState({}, document.title, window.location.pathname);
+            spielModus = 'menue';
+            wechsleAnsicht('menue');
         }
 
-        function wechsleBildschirm(bildschirm) {
-            if (bildschirm === 'menu') {
-                document.getElementById('menu-screen').classList.remove('hidden');
-                document.getElementById('game-screen').classList.add('hidden');
-                document.getElementById('game-screen').classList.remove('flex');
+        function wechsleAnsicht(ansicht) {
+            if (ansicht === 'menue') {
+                document.getElementById('menu-bildschirm').classList.remove('hidden');
+                document.getElementById('spiel-bildschirm').classList.add('hidden');
+                document.getElementById('spiel-bildschirm').classList.remove('flex');
             } else {
-                document.getElementById('menu-screen').classList.add('hidden');
-                document.getElementById('game-screen').classList.remove('hidden');
-                document.getElementById('game-screen').classList.add('flex');
+                document.getElementById('menu-bildschirm').classList.add('hidden');
+                document.getElementById('spiel-bildschirm').classList.remove('hidden');
+                document.getElementById('spiel-bildschirm').classList.add('flex');
             }
         }
 
-        window.erstelleWhatsAppRaum = async function() {
-            schliesseAlleModale();
-            spielerFarbe = 'w';
-            brettGedreht = false;
-            schachSpiel = new Chess();
-
-            const raumSchluessel = 'raum_' + Math.random().toString(36).substring(2, 8);
-            aktuellerRaumId = raumSchluessel;
-            
-            // Link wird exakt mit deiner GitHub Pages Adresse generiert
-            geteilterLink = `${GITHUB_PAGES_BASIS_URL}?room=${raumSchluessel}&color=b`;
-
-            document.getElementById('zeige-raum-code').innerText = geteilterLink;
-            document.getElementById('raum-link-modal').classList.remove('hidden');
-            
-            if (datenbank) {
-                try {
-                    const appID = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                    const { doc, setDoc } = window.firebaseModules;
-                    const raumRef = doc(datenbank, 'artifacts', appID, 'public', 'data', raumSchluessel);
-                    await setDoc(raumRef, { fen: schachSpiel.fen(), letztesUpdate: Date.now() });
-                } catch(e) {
-                    console.error("Cloud-Raum konnte nicht erstellt werden", e);
-                }
-            }
-            lauscheAufRaum(raumSchluessel);
-        }
-
-        window.sendeViaWhatsApp = function() {
-            const nachricht = encodeURIComponent("Lass uns eine Runde edles Holz-Schach spielen! Klicke einfach auf diesen Link, um direkt als Schwarz beizutreten: " + geteilterLink);
-            window.open("https://api.whatsapp.com/send?text=" + nachricht, "_blank");
-        }
-
-        window.kopiereRaumLink = function() {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(geteilterLink).then(() => {
-                    document.getElementById('kopier-feedback').innerText = 'Link kopiert!';
-                    setTimeout(() => { document.getElementById('kopier-feedback').innerText = ''; }, 2000);
-                });
-            } else {
-                const tempInput = document.createElement('input');
-                tempInput.value = geteilterLink;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand('copy');
-                document.body.removeChild(tempInput);
-                document.getElementById('kopier-feedback').innerText = 'Link kopiert!';
-                setTimeout(() => { document.getElementById('kopier-feedback').innerText = ''; }, 2000);
-            }
-        }
-
-        window.schliesseRaumLinkModal = function() {
-            document.getElementById('raum-link-modal').classList.add('hidden');
-            spielModus = 'online';
-            document.getElementById('spiel-info-badge').innerText = 'Online (Du bist Weiß)';
-            wechsleBildschirm('spiel');
-            erstelleBrettAnsicht();
-            aktualisiereStatus();
-        }
-
-        window.treteWhatsAppRaumBei = function() {
-            let eingabeWert = document.getElementById('raum-code-input').value.trim();
-            if (!eingabeWert) return;
-
-            let raumSchluessel = '';
-            if (eingabeWert.includes('room=')) {
-                try {
-                    const urlObj = new URL(eingabeWert.includes('http') ? eingabeWert : 'https://' + eingabeWert);
-                    raumSchluessel = urlObj.searchParams.get('room');
-                } catch(e) {
-                    const teile = eingabeWert.split('room=');
-                    raumSchluessel = teile[1].split('&')[0];
-                }
-            } else {
-                raumSchluessel = eingabeWert;
-            }
-
-            if (!raumSchluessel) {
-                zeigeBenachrichtigung("Fehler", "Ungültiger Link oder Raum-Code.");
-                return;
-            }
-
-            schliesseAlleModale();
-            spielerFarbe = 'b';
-            brettGedreht = true;
-            schachSpiel = new Chess();
-            spielModus = 'online';
-            aktuellerRaumId = raumSchluessel;
-            document.getElementById('spiel-info-badge').innerText = 'Online (Du bist Schwarz)';
-            wechsleBildschirm('spiel');
-            erstelleBrettAnsicht();
-            aktualisiereStatus();
-
-            lauscheAufRaum(raumSchluessel);
-        }
-
-        function lauscheAufRaum(raumSchluessel) {
-            if (!datenbank) return;
-            if (raumAbo) { raumAbo(); }
-            
-            try {
-                const appID = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const { doc, onSnapshot } = window.firebaseModules;
-                const raumRef = doc(datenbank, 'artifacts', appID, 'public', 'data', raumSchluessel);
-                
-                raumAbo = onSnapshot(raumRef, (docSchnappschuss) => {
-                    if (docSchnappschuss.exists()) {
-                        const daten = docSchnappschuss.data();
-                        if (daten && daten.fen && daten.fen !== schachSpiel.fen()) {
-                            istRemoteZug = true;
-                            schachSpiel.load(daten.fen);
-                            istRemoteZug = false;
-                            erstelleBrettAnsicht();
-                            aktualisiereStatus();
-                            pruefeSpielende();
-                        }
-                    }
-                }, (fehler) => {
-                    console.error("Cloud-Synchronisationsfehler", fehler);
-                });
-            } catch(e) {
-                console.error("Raum-Lauschen Fehler", e);
-            }
-        }
-
-        async function synchronisiereZugInCloud() {
-            if (!datenbank || !aktuellerRaumId || istRemoteZug) return;
-            try {
-                const appID = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const { doc, setDoc } = window.firebaseModules;
-                const raumRef = doc(datenbank, 'artifacts', appID, 'public', 'data', aktuellerRaumId);
-                await setDoc(raumRef, { fen: schachSpiel.fen(), letztesUpdate: Date.now() });
-            } catch(e) {
-                console.error("Zug-Synchronisation fehlgeschlagen", e);
-            }
-        }
-
-        window.dreheBrett = function() {
+        function dreheBrett() {
             brettGedreht = !brettGedreht;
             erstelleBrettAnsicht();
-        }
-
-        function zeigeBenachrichtigung(titel, beschreibung) {
-            document.getElementById('modal-titel').innerText = titel;
-            document.getElementById('modal-beschreibung').innerText = beschreibung;
-            document.getElementById('nachricht-modal').classList.remove('hidden');
         }
 
         function erstelleBrettAnsicht() {
@@ -691,8 +509,6 @@
                     const reiheNummer = 8 - r;
                     const feldId = spalteBuchstabe + reiheNummer;
 
-                    feldDiv.dataset.square = feldId;
-
                     if (ausgewaehltesFeld === feldId) {
                         feldDiv.classList.add('selected');
                     }
@@ -704,10 +520,8 @@
                     const figur = brettZustand[r][c];
                     if (figur) {
                         const figurSpan = document.createElement('span');
-                        const farbenKlasse = figur.color === 'w' 
-                            ? 'text-amber-50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] font-bold' 
-                            : 'text-zinc-950 drop-shadow-[0_1px_3px_rgba(255,255,255,0.45)] font-bold';
-                        figurSpan.className = `piece ${farbenKlasse}`;
+                        const istWeiss = figur.color === 'w';
+                        figurSpan.className = `piece ${istWeiss ? 'white-piece' : 'black-piece'}`;
                         figurSpan.innerText = figurenUnicode[figur.type];
                         feldDiv.appendChild(figurSpan);
                     }
@@ -719,10 +533,7 @@
         }
 
         function handhabeFeldKlick(feldId) {
-            if (spielModus === 'online' && schachSpiel.turn() !== spielerFarbe) {
-                return;
-            }
-            if (spielModus === 'ai' && schachSpiel.turn() === 'b') return;
+            if (spielModus === 'ki' && schachSpiel.turn() === 'b') return;
 
             const figur = schachSpiel.get(feldId);
 
@@ -747,10 +558,8 @@
                         aktualisiereStatus();
                         pruefeSpielende();
 
-                        if (spielModus === 'online') {
-                            synchronisiereZugInCloud();
-                        } else if (spielModus === 'ai' && !schachSpiel.game_over()) {
-                            setTimeout(fuehreKiZugAus, 350);
+                        if (spielModus === 'ki' && !schachSpiel.game_over()) {
+                            setTimeout(fuehreKiZugAus, 300);
                         }
                         return;
                     }
@@ -770,23 +579,27 @@
         function aktualisiereStatus() {
             const amZug = schachSpiel.turn();
             const zugText = document.getElementById('zug-text');
-            const indikator = document.getElementById('zug-indikator');
+            const punkt = document.getElementById('zug-punkt');
 
             if (amZug === 'w') {
                 zugText.innerText = 'Weiß ist am Zug';
-                indikator.className = 'w-2.5 h-2.5 rounded-full bg-amber-100 shadow-sm border border-amber-300';
+                punkt.style.background = '#ffffff';
             } else {
                 zugText.innerText = 'Schwarz ist am Zug';
-                indikator.className = 'w-2.5 h-2.5 rounded-full bg-zinc-950 border border-amber-600 shadow-sm';
+                punkt.style.background = '#18181b';
             }
         }
 
         function pruefeSpielende() {
             if (schachSpiel.in_checkmate()) {
                 const gewinner = schachSpiel.turn() === 'w' ? 'Schwarz' : 'Weiß';
-                zeigeBenachrichtigung("Schachmatt!", `${gewinner} hat das Spiel gewonnen!`);
+                document.getElementById('modal-titel').innerText = "Schachmatt!";
+                document.getElementById('modal-beschreibung').innerText = `${gewinner} hat das Spiel gewonnen!`;
+                document.getElementById('nachricht-modal').classList.remove('hidden');
             } else if (schachSpiel.in_draw()) {
-                zeigeBenachrichtigung("Unentschieden", "Das Spiel endet Remis.");
+                document.getElementById('modal-titel').innerText = "Unentschieden";
+                document.getElementById('modal-beschreibung').innerText = "Das Spiel endet Remis.";
+                document.getElementById('nachricht-modal').classList.remove('hidden');
             }
         }
 
@@ -800,17 +613,23 @@
                 gewählterZug = zuege[Math.floor(Math.random() * zuege.length)];
             } else if (kiSchwierigkeit === 'mittel') {
                 const schlagZuege = zuege.filter(m => m.captured);
-                if (schlagZuege.length > 0 && Math.random() < 0.75) {
-                    gewählterZug = schlagZuege[Math.floor(Math.random() * schlagZuege.length)];
-                } else {
-                    gewählterZug = zuege[Math.floor(Math.random() * zuege.length)];
-                }
+                gewählterZug = schlagZuege.length > 0 && Math.random() < 0.7 
+                    ? schlagZuege[Math.floor(Math.random() * schlagZuege.length)]
+                    : zuege[Math.floor(Math.random() * zuege.length)];
             } else {
                 let besterWert = -9999;
                 let besteZuege = [];
                 for (let m of zuege) {
                     schachSpiel.move(m);
-                    let bewertung = bewerteBrett(schachSpiel);
+                    let bewertung = 0;
+                    const brett = schachSpiel.board();
+                    const werte = { p: 10, n: 30, b: 30, r: 50, q: 90, k: 900 };
+                    for(let r=0; r<8; r++) {
+                        for(let c=0; c<8; c++) {
+                            let f = brett[r][c];
+                            if(f) bewertung += (f.color === 'b' ? werte[f.type] : -werte[f.type]);
+                        }
+                    }
                     schachSpiel.undo();
                     if (bewertung > besterWert) {
                         besterWert = bewertung;
@@ -826,22 +645,6 @@
             erstelleBrettAnsicht();
             aktualisiereStatus();
             pruefeSpielende();
-        }
-
-        function bewerteBrett(schachInstanz) {
-            let gesamtBewertung = 0;
-            const brett = schachInstanz.board();
-            const figurenwerte = { p: 10, n: 30, b: 30, r: 50, q: 90, k: 900 };
-            for (let r = 0; r < 8; r++) {
-                for (let c = 0; c < 8; c++) {
-                    const figur = brett[r][c];
-                    if (figur) {
-                        const wert = figurenwerte[figur.type];
-                        gesamtBewertung += (figur.color === 'b' ? wert : -wert);
-                    }
-                }
-            }
-            return gesamtBewertung;
         }
     </script>
 </body>
