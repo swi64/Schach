@@ -201,7 +201,7 @@
         <div id="menu-bildschirm" class="menu-karte">
             <div style="text-align: center;">
                 <h2 style="font-size: 17px; font-weight: bold; margin: 0 0 4px 0; color: #fef3c7; font-family: serif;">Holzschach Deluxe</h2>
-                <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Mit Sound & getrennten Figurenfarben.</p>
+                <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Mit sanften Klängen & getrennten Farben.</p>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -360,7 +360,7 @@
                 <h3 style="font-size: 14px; font-weight: bold; color: #fef3c7; margin: 0; font-family: serif;">Hilfe & Infos</h3>
                 <button onclick="schliesseAlleModale()" style="background: none; border: none; color: #a1a1aa; font-size: 15px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p style="font-size: 11px; color: #d4d4d8; line-height: 1.4; margin: 0;">Die Figurenfarben sind jetzt fest getrennt (Weiß und Schwarz). Beide Seiten sehen einwandfrei unterscheidbare 3D-Figuren.</p>
+            <p style="font-size: 11px; color: #d4d4d8; line-height: 1.4; margin: 0;">Online spielen: Du bist Weiß (unten), der Gast öffnet den Link, bekommt Schwarz zugewiesen und sieht sein Brett automatisch richtig herum.</p>
             <button onclick="schliesseAlleModale()" style="width: 100%; background: #b45309; border: 1px solid #d97706; color: white; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center;">Verstanden</button>
         </div>
     </div>
@@ -396,6 +396,7 @@
             return audioCtx;
         }
 
+        /* Sanfte, weiche Klänge ohne Kratzen */
         function spieleTon(typ) {
             try {
                 const ctx = getAudioContext();
@@ -407,30 +408,42 @@
                 const jetzt = ctx.currentTime;
 
                 if (typ === 'zug') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(320, jetzt);
-                    osc.frequency.exponentialRampToValueAtTime(110, jetzt + 0.08);
-                    gain.gain.setValueAtTime(0.25, jetzt);
-                    gain.gain.linearRampToValueAtTime(0.01, jetzt + 0.08);
-                    osc.start(jetzt);
-                    osc.stop(jetzt + 0.08);
-                } else if (typ === 'schlagen') {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(180, jetzt);
-                    osc.frequency.exponentialRampToValueAtTime(60, jetzt + 0.12);
-                    gain.gain.setValueAtTime(0.3, jetzt);
-                    gain.gain.linearRampToValueAtTime(0.01, jetzt + 0.12);
+                    // Sanfter Sinus-Ton für normale Züge
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(280, jetzt);
+                    osc.frequency.exponentialRampToValueAtTime(140, jetzt + 0.12);
+                    
+                    gain.gain.setValueAtTime(0.001, jetzt);
+                    gain.gain.linearRampToValueAtTime(0.15, jetzt + 0.02);
+                    gain.gain.linearRampToValueAtTime(0.001, jetzt + 0.12);
+                    
                     osc.start(jetzt);
                     osc.stop(jetzt + 0.12);
-                } else if (typ === 'matt') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(440, jetzt);
-                    osc.frequency.setValueAtTime(554, jetzt + 0.15);
-                    osc.frequency.setValueAtTime(659, jetzt + 0.3);
-                    gain.gain.setValueAtTime(0.3, jetzt);
-                    gain.gain.linearRampToValueAtTime(0.01, jetzt + 0.6);
+                } else if (typ === 'schlagen') {
+                    // Tieferer, weicherer Ton für Schlagen
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(180, jetzt);
+                    osc.frequency.exponentialRampToValueAtTime(80, jetzt + 0.18);
+                    
+                    gain.gain.setValueAtTime(0.001, jetzt);
+                    gain.gain.linearRampToValueAtTime(0.2, jetzt + 0.02);
+                    gain.gain.linearRampToValueAtTime(0.001, jetzt + 0.18);
+                    
                     osc.start(jetzt);
-                    osc.stop(jetzt + 0.6);
+                    osc.stop(jetzt + 0.18);
+                } else if (typ === 'matt') {
+                    // Harmonischer Akkord für Matt
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(330, jetzt);
+                    osc.frequency.setValueAtTime(415, jetzt + 0.15);
+                    osc.frequency.setValueAtTime(494, jetzt + 0.3);
+                    
+                    gain.gain.setValueAtTime(0.001, jetzt);
+                    gain.gain.linearRampToValueAtTime(0.18, jetzt + 0.05);
+                    gain.gain.linearRampToValueAtTime(0.001, jetzt + 0.7);
+                    
+                    osc.start(jetzt);
+                    osc.stop(jetzt + 0.7);
                 }
             } catch (e) {
                 console.log("Audio konnte nicht abgespielt werden", e);
@@ -479,7 +492,7 @@
         function erstelleOnlineSpiel() {
             spielModus = 'online';
             meineFarbe = 'w';
-            brettGedreht = false;
+            brettGedreht = false; // Host hat Weiß und schaut normal von unten
 
             if (peer) { peer.destroy(); }
             peer = new Peer(FESTE_RAUM_ID);
@@ -514,7 +527,7 @@
         function beitreibeOnlineSpiel(raumId) {
             spielModus = 'online';
             meineFarbe = 'b';
-            brettGedreht = true;
+            brettGedreht = true; // Gast hat Schwarz und schaut von unten auf seine schwarzen Figuren
 
             document.getElementById('online-status-text').innerText = "Verbinde mit Stefans Schach-Raum...";
             document.getElementById('online-warteschlange-modal').classList.remove('hidden');
@@ -675,7 +688,7 @@
                     const figur = brettZustand[r][c];
                     if (figur) {
                         const figurSpan = document.createElement('span');
-                        // Exakte Zuweisung nach chess.js ('w' = weiß, 'b' = schwarz)
+                        // Hier wird anhand der echten Schach-Farbe ('w' oder 'b') die CSS-Klasse gesetzt
                         const istWeiss = (figur.color === 'w');
                         figurSpan.className = `piece ${istWeiss ? 'white-piece' : 'black-piece'}`;
                         figurSpan.innerText = figurenUnicode[figur.type];
