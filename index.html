@@ -140,14 +140,16 @@
             left: 0;
             cursor: pointer;
         }
+        /* Perfekt getrennte Farben mit edlem 3D-Effekt */
         .piece.white-piece {
             color: #ffffff !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.8);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7), 0 -1px 1px rgba(200,200,200,0.5);
         }
         .piece.black-piece {
-            color: #111111 !important;
-            text-shadow: 0 1px 3px rgba(255,255,255,0.5), 0 0 2px rgba(255,255,255,0.3);
+            color: #121212 !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 3px rgba(255,255,255,0.4), 0 -1px 1px rgba(80,80,80,0.6);
         }
+
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -199,7 +201,7 @@
         <div id="menu-bildschirm" class="menu-karte">
             <div style="text-align: center;">
                 <h2 style="font-size: 17px; font-weight: bold; margin: 0 0 4px 0; color: #fef3c7; font-family: serif;">Holzschach Deluxe</h2>
-                <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Volle Größe & perfekte Lesbarkeit.</p>
+                <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Mit Sound & getrennten Figurenfarben.</p>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -279,7 +281,7 @@
         </div>
     </div>
 
-    <!-- Teilen Modal (Mit festem Link) -->
+    <!-- Teilen Modal -->
     <div id="teilen-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -300,7 +302,7 @@
         </div>
     </div>
 
-    <!-- Online Warteschlange / Verbindungs-Modal für den Gast -->
+    <!-- Online Warteschlange -->
     <div id="online-warteschlange-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <div style="width: 40px; height: 40px; background: #2d1a0e; color: #059669; border: 1px solid #047857; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">
@@ -337,7 +339,7 @@
         </div>
     </div>
 
-    <!-- Nachricht-Modal (Schachmatt / Remis) -->
+    <!-- Nachricht-Modal -->
     <div id="nachricht-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <div style="width: 40px; height: 40px; background: #2d1a0e; color: #f59e0b; border: 1px solid #78350f; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">
@@ -358,7 +360,7 @@
                 <h3 style="font-size: 14px; font-weight: bold; color: #fef3c7; margin: 0; font-family: serif;">Hilfe & Infos</h3>
                 <button onclick="schliesseAlleModale()" style="background: none; border: none; color: #a1a1aa; font-size: 15px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p style="font-size: 11px; color: #d4d4d8; line-height: 1.4; margin: 0;">Der Online-Link bleibt jetzt immer fest und gleich! Du öffnest den Raum (bist Weiß) und dein Gegner klickt auf denselben Link (wird Schwarz) und ihr seid sofort verbunden.</p>
+            <p style="font-size: 11px; color: #d4d4d8; line-height: 1.4; margin: 0;">Die Figurenfarben sind jetzt fest getrennt (Weiß und Schwarz). Beide Seiten sehen einwandfrei unterscheidbare 3D-Figuren.</p>
             <button onclick="schliesseAlleModale()" style="width: 100%; background: #b45309; border: 1px solid #d97706; color: white; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center;">Verstanden</button>
         </div>
     </div>
@@ -369,7 +371,6 @@
             'P': '♙', 'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔'
         };
 
-        // Fester Raumname für dich – so bleibt der Link immer exakt identisch!
         const FESTE_RAUM_ID = 'stefan_holzschach_raum_2026';
 
         let schachSpiel = new Chess();
@@ -384,10 +385,61 @@
         let conn = null;
         let meineFarbe = 'w';
 
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function spieleTon(typ) {
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const jetzt = ctx.currentTime;
+
+                if (typ === 'zug') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(320, jetzt);
+                    osc.frequency.exponentialRampToValueAtTime(110, jetzt + 0.08);
+                    gain.gain.setValueAtTime(0.25, jetzt);
+                    gain.gain.linearRampToValueAtTime(0.01, jetzt + 0.08);
+                    osc.start(jetzt);
+                    osc.stop(jetzt + 0.08);
+                } else if (typ === 'schlagen') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, jetzt);
+                    osc.frequency.exponentialRampToValueAtTime(60, jetzt + 0.12);
+                    gain.gain.setValueAtTime(0.3, jetzt);
+                    gain.gain.linearRampToValueAtTime(0.01, jetzt + 0.12);
+                    osc.start(jetzt);
+                    osc.stop(jetzt + 0.12);
+                } else if (typ === 'matt') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, jetzt);
+                    osc.frequency.setValueAtTime(554, jetzt + 0.15);
+                    osc.frequency.setValueAtTime(659, jetzt + 0.3);
+                    gain.gain.setValueAtTime(0.3, jetzt);
+                    gain.gain.linearRampToValueAtTime(0.01, jetzt + 0.6);
+                    osc.start(jetzt);
+                    osc.stop(jetzt + 0.6);
+                }
+            } catch (e) {
+                console.log("Audio konnte nicht abgespielt werden", e);
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('join')) {
-                // Wenn der Link den Parameter ?join hat, verbindet sich der Gast automatisch
                 beitreibeOnlineSpiel(FESTE_RAUM_ID);
             }
         });
@@ -430,7 +482,6 @@
             brettGedreht = false;
 
             if (peer) { peer.destroy(); }
-            // Du öffnest den Server unter der FESTEN ID, damit du immer der Host bist
             peer = new Peer(FESTE_RAUM_ID);
 
             peer.on('open', () => {
@@ -438,7 +489,6 @@
                     ? window.location.origin + window.location.pathname 
                     : "https://swi64.github.io/Schach/";
 
-                // Der Link erhält den festen Parameter ?join, damit der Gast sofort weiß, dass er joinen muss
                 aktuellerTeilenLink = basisUrl + '?join=true';
                 document.getElementById('spiel-link-input').value = aktuellerTeilenLink;
                 document.getElementById('teilen-modal').classList.remove('hidden');
@@ -457,7 +507,6 @@
 
             peer.on('error', (err) => {
                 console.error(err);
-                // Falls der Peer-Server denkt, die ID ist noch vergeben, verbinden wir uns trotzdem direkt als Host oder öffnen den Warteraum
                 document.getElementById('teilen-modal').classList.remove('hidden');
             });
         }
@@ -465,7 +514,7 @@
         function beitreibeOnlineSpiel(raumId) {
             spielModus = 'online';
             meineFarbe = 'b';
-            brettGedreht = true; // Gast spielt mit Schwarz und sieht das Brett umgedreht
+            brettGedreht = true;
 
             document.getElementById('online-status-text').innerText = "Verbinde mit Stefans Schach-Raum...";
             document.getElementById('online-warteschlange-modal').classList.remove('hidden');
@@ -495,11 +544,21 @@
 
             conn.on('data', (data) => {
                 if (data.type === 'zug') {
+                    const zielFeld = data.move.to;
+                    const istSchlag = schachSpiel.get(zielFeld) !== null;
+                    
                     schachSpiel.move(data.move);
                     ausgewaehltesFeld = null;
                     moeglicheZuege = [];
                     erstelleBrettAnsicht();
                     aktualisiereStatus();
+                    
+                    if (istSchlag) {
+                        spieleTon('schlagen');
+                    } else {
+                        spieleTon('zug');
+                    }
+                    
                     pruefeSpielende();
                 }
             });
@@ -616,7 +675,8 @@
                     const figur = brettZustand[r][c];
                     if (figur) {
                         const figurSpan = document.createElement('span');
-                        const istWeiss = figur.color === 'w';
+                        // Exakte Zuweisung nach chess.js ('w' = weiß, 'b' = schwarz)
+                        const istWeiss = (figur.color === 'w');
                         figurSpan.className = `piece ${istWeiss ? 'white-piece' : 'black-piece'}`;
                         figurSpan.innerText = figurenUnicode[figur.type];
                         feldDiv.appendChild(figurSpan);
@@ -630,10 +690,7 @@
 
         function handhabeFeldKlick(feldId) {
             if (spielModus === 'ki' && schachSpiel.turn() === 'b') return;
-
-            if (spielModus === 'online') {
-                if (schachSpiel.turn() !== meineFarbe) return;
-            }
+            if (spielModus === 'online' && schachSpiel.turn() !== meineFarbe) return;
 
             const figur = schachSpiel.get(feldId);
 
@@ -645,6 +702,7 @@
                 }
             } else {
                 if (moeglicheZuege.includes(feldId)) {
+                    const istSchlag = schachSpiel.get(feldId) !== null;
                     const zug = schachSpiel.move({
                         from: ausgewaehltesFeld,
                         to: feldId,
@@ -656,6 +714,13 @@
                         moeglicheZuege = [];
                         erstelleBrettAnsicht();
                         aktualisiereStatus();
+
+                        if (istSchlag) {
+                            spieleTon('schlagen');
+                        } else {
+                            spieleTon('zug');
+                        }
+
                         pruefeSpielende();
 
                         if (spielModus === 'online' && conn && conn.open) {
@@ -696,11 +761,12 @@
 
         function pruefeSpielende() {
             if (schachSpiel.in_checkmate()) {
+                spieleTon('matt');
                 const gewinner = schachSpiel.turn() === 'w' ? 'Schwarz' : 'Weiß';
                 document.getElementById('modal-titel').innerText = "Schachmatt!";
                 document.getElementById('modal-beschreibung').innerText = `${gewinner} hat das Spiel gewonnen!`;
                 document.getElementById('nachricht-modal').classList.remove('hidden');
-            } else istDraussen: if (schachSpiel.in_draw()) {
+            } else if (schachSpiel.in_draw()) {
                 document.getElementById('modal-titel').innerText = "Unentschieden";
                 document.getElementById('modal-beschreibung').innerText = "Das Spiel endet Remis.";
                 document.getElementById('nachricht-modal').classList.remove('hidden');
@@ -713,9 +779,19 @@
             if (zuege.length === 0) return;
 
             let gewählterZug = zuege[Math.floor(Math.random() * zuege.length)];
+            const zielFeld = gewählterZug.to;
+            const istSchlag = schachSpiel.get(zielFeld) !== null;
+
             schachSpiel.move(gewählterZug);
             erstelleBrettAnsicht();
             aktualisiereStatus();
+
+            if (istSchlag) {
+                spieleTon('schlagen');
+            } else {
+                spieleTon('zug');
+            }
+
             pruefeSpielende();
         }
     </script>
