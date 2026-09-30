@@ -140,14 +140,16 @@
             left: 0;
             cursor: pointer;
         }
-        /* Perfekt getrennte Farben mit edlem 3D-Effekt */
+        /* Kompatibilitäts-Fix für ältere Android-Browser (S9+ etc.) */
         .piece.white-piece {
-            color: #ffffff !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,0.7), 0 -1px 1px rgba(200,200,200,0.5);
+            color: #f8fafc !important;
+            -webkit-text-stroke: 1px #475569;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
         .piece.black-piece {
-            color: #121212 !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 3px rgba(255,255,255,0.4), 0 -1px 1px rgba(80,80,80,0.6);
+            color: #0f172a !important;
+            -webkit-text-stroke: 1px #94a3b8;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
         .modal-overlay {
@@ -201,7 +203,7 @@
         <div id="menu-bildschirm" class="menu-karte">
             <div style="text-align: center;">
                 <h2 style="font-size: 17px; font-weight: bold; margin: 0 0 4px 0; color: #fef3c7; font-family: serif;">Holzschach Deluxe</h2>
-                <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Mit sanften Klängen & getrennten Farben.</p>
+                <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Mit sanften Klängen & S9+ kompatibel.</p>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -264,15 +266,15 @@
         </div>
     </main>
 
-    <!-- Bestätigungs-Modal -->
+    <!-- Bestätigungs-Modal (Sicherheitsabfrage) -->
     <div id="bestaetigungs-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <div style="width: 40px; height: 40px; background: #2d1a0e; color: #f59e0b; border: 1px solid #78350f; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 16px;">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <div>
-                <h3 style="font-size: 15px; font-weight: bold; color: #fef3c7; margin: 0 0 4px 0; font-family: serif;">Willst du wirklich?</h3>
-                <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Dein aktuelles Spiel wird abgebrochen und du kehrst ins Hauptmenü zurück.</p>
+                <h3 style="font-size: 15px; font-weight: bold; color: #fef3c7; margin: 0 0 4px 0; font-family: serif;">Spiel abbrechen?</h3>
+                <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Dein aktuelles Spiel wird beendet und du kehrst ins Hauptmenü zurück.</p>
             </div>
             <div style="display: flex; gap: 8px; margin-top: 2px;">
                 <button onclick="schliesseAlleModale()" style="flex: 1; background: #27272a; border: 1px solid #3f3f46; color: #f4f4f5; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer;">Nein, weiter</button>
@@ -286,7 +288,7 @@
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-size: 14px; font-weight: bold; color: #fef3c7; margin: 0; font-family: serif;">Online-Spiel teilen</h3>
-                <button onclick="fuhreAusZurueckZumMenue()" style="background: none; border: none; color: #a1a1aa; font-size: 15px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="sicheresZurueckZumMenue()" style="background: none; border: none; color: #a1a1aa; font-size: 15px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <p style="font-size: 11px; color: #a1a1aa; margin: 0;">Dein fester Link (bleibt immer gleich):</p>
             <input type="text" id="spiel-link-input" readonly style="width: 100%; background: #11100e; border: 1px solid #78350f; color: #fef3c7; padding: 8px; border-radius: 8px; font-size: 11px; text-align: center;" />
@@ -312,6 +314,7 @@
                 <h3 style="font-size: 15px; font-weight: bold; color: #fef3c7; margin: 0 0 4px 0; font-family: serif;">Online-Verbindung</h3>
                 <p id="online-status-text" style="font-size: 11px; color: #d1fae5; margin: 0;">Verbinde zum Host (Stefan)...</p>
             </div>
+            <button onclick="fuhreAusZurueckZumMenue()" style="width: 100%; background: #27272a; border: 1px solid #3f3f46; color: #f4f4f5; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; margin-top: 4px;">Abbrechen</button>
         </div>
     </div>
 
@@ -361,7 +364,7 @@
                 <button onclick="schliesseAlleModale()" style="background: none; border: none; color: #a1a1aa; font-size: 15px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <p style="font-size: 11px; color: #d4d4d8; line-height: 1.4; margin: 0;">Online spielen: Du bist Weiß (unten), der Gast öffnet den Link, bekommt Schwarz zugewiesen und sieht sein Brett automatisch richtig herum.</p>
-            <button onclick="schliesseAlleModale()" style="width: 100%; background: #b45309; border: 1px solid #d97706; color: white; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center;">Verstanden</button>
+            <button onclick="schliesseAlleModale()" style="width: 100%; background: #b45309; border: 1px solid #d97706; color: white; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; margin-top: 6px;">Verstanden</button>
         </div>
     </div>
 
@@ -376,7 +379,7 @@
         let schachSpiel = new Chess();
         let ausgewaehltesFeld = null;
         let moeglicheZuege = [];
-        let spielModus = 'lokal';
+        let spielModus = 'menue'; // Startet im Menü
         let kiSchwierigkeit = 'mittel';
         let brettGedreht = false;
         let aktuellerTeilenLink = '';
@@ -408,7 +411,6 @@
                 const jetzt = ctx.currentTime;
 
                 if (typ === 'zug') {
-                    // Sanfter Sinus-Ton für normale Züge
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(280, jetzt);
                     osc.frequency.exponentialRampToValueAtTime(140, jetzt + 0.12);
@@ -420,7 +422,6 @@
                     osc.start(jetzt);
                     osc.stop(jetzt + 0.12);
                 } else if (typ === 'schlagen') {
-                    // Tieferer, weicherer Ton für Schlagen
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(180, jetzt);
                     osc.frequency.exponentialRampToValueAtTime(80, jetzt + 0.18);
@@ -432,7 +433,6 @@
                     osc.start(jetzt);
                     osc.stop(jetzt + 0.18);
                 } else if (typ === 'matt') {
-                    // Harmonischer Akkord für Matt
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(330, jetzt);
                     osc.frequency.setValueAtTime(415, jetzt + 0.15);
@@ -492,7 +492,7 @@
         function erstelleOnlineSpiel() {
             spielModus = 'online';
             meineFarbe = 'w';
-            brettGedreht = false; // Host hat Weiß und schaut normal von unten
+            brettGedreht = false;
 
             if (peer) { peer.destroy(); }
             peer = new Peer(FESTE_RAUM_ID);
@@ -527,7 +527,7 @@
         function beitreibeOnlineSpiel(raumId) {
             spielModus = 'online';
             meineFarbe = 'b';
-            brettGedreht = true; // Gast hat Schwarz und schaut von unten auf seine schwarzen Figuren
+            brettGedreht = true;
 
             document.getElementById('online-status-text').innerText = "Verbinde mit Stefans Schach-Raum...";
             document.getElementById('online-warteschlange-modal').classList.remove('hidden');
@@ -619,11 +619,17 @@
             document.getElementById('online-warteschlange-modal').classList.add('hidden');
         }
 
-        function sicheresZurueckZurMenue() {
+        /* Zuverlässige Sicherheitsabfrage vor dem Beenden */
+        function sicheresZurueckZumMenue() {
+            // Wenn wir schon im Hauptmenü sind, gar nichts tun
             if (spielModus === 'menue') return;
-            if (schachSpiel && !schachSpiel.game_over() && spielModus !== 'online') {
+
+            // Wenn ein Spiel läuft und nicht bereits vorbei ist, Sicherheitsabfrage einblenden
+            if (schachSpiel && !schachSpiel.game_over()) {
+                schliesseAlleModale();
                 document.getElementById('bestaetigungs-modal').classList.remove('hidden');
             } else {
+                // Wenn das Spiel bereits beendet war, direkt ins Menü wechseln
                 fuhreAusZurueckZumMenue();
             }
         }
@@ -688,7 +694,6 @@
                     const figur = brettZustand[r][c];
                     if (figur) {
                         const figurSpan = document.createElement('span');
-                        // Hier wird anhand der echten Schach-Farbe ('w' oder 'b') die CSS-Klasse gesetzt
                         const istWeiss = (figur.color === 'w');
                         figurSpan.className = `piece ${istWeiss ? 'white-piece' : 'black-piece'}`;
                         figurSpan.innerText = figurenUnicode[figur.type];
